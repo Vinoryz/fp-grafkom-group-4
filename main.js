@@ -37,6 +37,12 @@ let isInfoModalOpen = false; // Track if ID card modal is open
 const infoModal = document.getElementById("info-modal-overlay");
 const infoModalCloseBtn = document.getElementById("info-modal-close-btn");
 
+// Store GLB embedded metadata (loaded from scene.glb)
+let glbBatikMetadata = {}; // Will be populated when model loads
+
+// Track what batik is currently applied to Object_3_4
+let currentAppliedBatikOnCanting = null; // e.g., "batik_manggur", "batik_kawung", etc.
+
 // Batik object data mapping
 const batikObjectData = {
   batik_1: {
@@ -312,6 +318,18 @@ function finishCanting() {
     return;
   }
 
+  // Determine which batik was applied (parse from motifPath)
+  // e.g., "./assets/batik_manggur.jpg" → "batik_manggur"
+  const appliedBatik = motifPath
+    .split("/")
+    .pop() // Get filename
+    .replace(".jpg", "") // Remove extension
+    .toLowerCase();
+
+  // Track the applied batik
+  currentAppliedBatikOnCanting = appliedBatik;
+  console.log("Applied batik to Object_3_4:", currentAppliedBatikOnCanting);
+
   // Load texture and apply to Object_3_4
   const textureLoader = new THREE.TextureLoader();
   textureLoader.load(
@@ -504,6 +522,39 @@ function init() {
       // Store reference for raycasting
       loadedModel = model;
 
+      // ===== Extract embedded metadata from GLB =====
+      model.traverse((child) => {
+        // Check if this object has metadata (custom properties from Blender)
+        if (
+          child.userData &&
+          child.name &&
+          child.name.toLowerCase().includes("batik")
+        ) {
+          const batikName = child.name;
+
+          // Store metadata with the batik name as key
+          glbBatikMetadata[batikName] = {
+            name: child.userData.name || batikName,
+            description: child.userData.description || "",
+            philosophy: child.userData.philosophy || [],
+          };
+
+          console.log(
+            `📚 Loaded metadata for ${batikName}:`,
+            glbBatikMetadata[batikName]
+          );
+        }
+      });
+
+      if (Object.keys(glbBatikMetadata).length > 0) {
+        console.log("✅ All embedded batik metadata loaded:", glbBatikMetadata);
+      } else {
+        console.log(
+          "⚠️ No embedded batik metadata found in GLB - will use hardcoded fallback"
+        );
+      }
+      // ===== End: Extract metadata =====
+
       // Hitung Bounding Box
       const box = new THREE.Box3().setFromObject(model);
       const size = box.getSize(new THREE.Vector3());
@@ -690,6 +741,28 @@ function isBatikObject(name, parentName) {
   );
 }
 
+// Clean up object names by removing technical suffixes
+function cleanBatikName(objectName) {
+  // Remove technical suffixes like .obj, .Cleaner, .MaterialMerger, .Gles, etc.
+  let cleaned = objectName
+    .replace(/\.obj.*$/i, '') // Remove everything after .obj
+    .replace(/\.cleaner.*$/i, '') // Remove everything after .cleaner
+    .replace(/\.materialmerger.*$/i, '') // Remove everything after .materialmerger
+    .replace(/\.gles.*$/i, '') // Remove everything after .gles
+    .trim();
+  
+  return cleaned;
+}
+
+// Convert batik name to readable format
+function formatBatikName(batikName) {
+  // Convert "batik_parang" to "Batik Parang"
+  return batikName
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
 // Open info modal with object data
 function openInfoModal(objectName) {
   isInfoModalOpen = true;
@@ -698,18 +771,145 @@ function openInfoModal(objectName) {
   // Unlock controls so user can see the modal clearly
   controls.unlock();
 
-  // Get object data or use defaults
-  const data = batikObjectData[objectName] || {
-    name: objectName,
-    description: "No description available for this object.",
-    philosophy: "No philosophy information available.",
-  };
+  // Find the root batik group by traversing up the hierarchy
+  let rootBatikGroup = null;
+  let currentObject = currentInteractableObject;
 
-  // Populate modal
+  console.log("🔍 Starting traversal from:", objectName);
+
+  while (currentObject) {
+    const name = currentObject.name.toLowerCase();
+    console.log(
+      `  Checking: ${currentObject.name} (contains 'batik'? ${name.includes(
+        "batik"
+      )})`
+    );
+    if (name.includes("batik")) {
+      rootBatikGroup = currentObject;
+      console.log(`  ✅ Found batik root: ${rootBatikGroup.name}`);
+      break;
+    }
+    currentObject = currentObject.parent;
+  }
+
+  let groupName = rootBatikGroup?.name || objectName;
+  // Clean the group name from technical suffixes
+  const cleanedGroupName = cleanBatikName(groupName);
+  console.log(
+    `📝 Raw group name: "${groupName}" → Cleaned: "${cleanedGroupName}"`
+  );
+
+  let data;
+
+  // Special handling for Object_3_4 (Canting/Canvas object)
+  if (objectName === "Object_3_4") {
+    console.log("🎨 Opening Object_3_4 (Canting object)");
+    if (currentAppliedBatikOnCanting) {
+      console.log(`  User has applied: ${currentAppliedBatikOnCanting}`);
+      // User has applied a batik - show that batik's metadata
+      // Try GLB metadata first
+      data = glbBatikMetadata[currentAppliedBatikOnCanting];
+      console.log(`  GLB metadata found? ${data ? "✅ Yes" : "❌ No"}`, data);
+
+      // Fall back to hardcoded data
+      if (!data) {
+        data = batikObjectData[currentAppliedBatikOnCanting];
+        console.log(
+          `  Hardcoded data found? ${data ? "✅ Yes" : "❌ No"}`,
+          data
+        );
+      }
+
+      // Default if neither found
+      if (!data) {
+        data = {
+          name: `Applied: ${currentAppliedBatikOnCanting}`,
+          description: `This is the ${currentAppliedBatikOnCanting} batik pattern that you applied.`,
+          philosophy:
+            "The user's creative choice and artistic expression through batik.",
+        };
+        console.log("  Using default/fallback data");
+      }
+    } else {
+      console.log("  No batik applied yet - showing blank canvas");
+      // No batik applied yet - show blank canvas message
+      data = {
+        name: "Blank Canvas",
+        description:
+          "An empty white cloth ready for batik application. Use the 'Q' key to open the Virtual Canting tool and apply a beautiful batik pattern!",
+        philosophy: [
+          "Represents potential and creativity awaiting the artist's touch.",
+          "A blank canvas is the beginning of artistic expression.",
+          "Every masterpiece starts with an empty canvas and a creative vision.",
+        ],
+      };
+    }
+  } else {
+    // For regular batik objects - try multiple metadata sources
+    console.log(`🖼️ Opening regular batik object: ${cleanedGroupName}`);
+
+    // 1. Try GLB metadata first (highest priority)
+    data = glbBatikMetadata[cleanedGroupName];
+    console.log(
+      `  GLB metadata (${cleanedGroupName})? ${data ? "✅ Yes" : "❌ No"}`,
+      data
+    );
+
+    // 2. Try GLB metadata with original group name
+    if (!data && groupName !== cleanedGroupName) {
+      data = glbBatikMetadata[groupName];
+      console.log(
+        `  GLB metadata (${groupName})? ${data ? "✅ Yes" : "❌ No"}`,
+        data
+      );
+    }
+
+    // 3. Fall back to hardcoded batikObjectData
+    if (!data) {
+      data = batikObjectData[cleanedGroupName];
+      console.log(
+        `  Hardcoded data (${cleanedGroupName})? ${data ? "✅ Yes" : "❌ No"}`,
+        data
+      );
+    }
+
+    // 4. Final fallback - generic defaults
+    if (!data) {
+      data = {
+        name: formatBatikName(cleanedGroupName),
+        description: "No description available for this object.",
+        philosophy: "No philosophy information available.",
+      };
+      console.log("  Using generic fallback data");
+    }
+  }
+
+  console.log("📊 Final data to display:", data);
+
+  // Populate modal title
   document.getElementById("info-modal-title").textContent = data.name;
+
+  // Populate description
   document.getElementById("info-modal-description").innerHTML =
     data.description;
-  document.getElementById("info-modal-philosophy").innerHTML = data.philosophy;
+
+  // Populate philosophy (handle both string and array)
+  let philosophyHTML = "";
+  if (Array.isArray(data.philosophy)) {
+    // If philosophy is an array, display each item as a list
+    philosophyHTML = data.philosophy
+      .map((item) => `<li>• ${item}</li>`)
+      .join("");
+    philosophyHTML = `<ul style="margin-left: 20px;">${philosophyHTML}</ul>`;
+  } else if (typeof data.philosophy === "string" && data.philosophy) {
+    // If it's a string, display as is
+    philosophyHTML = data.philosophy;
+  } else {
+    // Empty/no philosophy
+    philosophyHTML = "<em>No philosophy information available.</em>";
+  }
+
+  document.getElementById("info-modal-philosophy").innerHTML = philosophyHTML;
 
   // Reset preview image
   const previewImg = document.getElementById("info-modal-preview-img");
@@ -720,21 +920,29 @@ function openInfoModal(objectName) {
   previewPlaceholder.style.display = "block";
 
   // Try to load preview image from assets
-  const imagePath = `./assets/${objectName}.jpg`;
+  const imagePath =
+    objectName === "Object_3_4"
+      ? `./assets/${currentAppliedBatikOnCanting || "blank"}.jpg`
+      : `./assets/${cleanedGroupName}.jpg`;
+
+  console.log(`🖼️ Trying to load preview image: ${imagePath}`);
+
   const previewImg2 = new Image();
   previewImg2.onload = function () {
     previewImg.src = imagePath;
     previewImg.style.display = "block";
     previewPlaceholder.style.display = "none";
+    console.log(`✅ Preview image loaded: ${imagePath}`);
   };
   previewImg2.onerror = function () {
     // Image not found, keep placeholder
     previewImg.style.display = "none";
     previewPlaceholder.style.display = "block";
+    console.log(`⚠️ Preview image not found: ${imagePath}`);
   };
   previewImg2.src = imagePath;
 
-  console.log("Info modal opened for:", objectName);
+  console.log("✅ Info modal fully populated and displayed");
 }
 
 // Close info modal

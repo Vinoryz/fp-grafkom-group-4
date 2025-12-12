@@ -403,12 +403,16 @@
         );
         border-radius: 16px;
         width: 90%;
-        max-width: 600px;
+        max-width: 85vw;
+        height: 50vh;
+        max-height: 50vh;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
         border: 2px solid rgba(100, 150, 255, 0.4);
         overflow: hidden;
         animation: modalAppear 0.3s ease-out;
         pointer-events: auto;
+        display: flex;
+        flex-direction: column;
       }
 
       @keyframes modalAppear {
@@ -470,9 +474,11 @@
       .info-modal-body {
         padding: 30px;
         display: grid;
-        grid-template-columns: 250px 1fr;
-        gap: 30px;
+        grid-template-columns: 300px 1fr;
+        gap: 40px;
         color: #fff;
+        flex: 1;
+        overflow-y: auto;
       }
 
       .info-modal-preview {
@@ -480,11 +486,13 @@
         flex-direction: column;
         align-items: center;
         justify-content: flex-start;
+        height: 100%;
       }
 
       .info-modal-preview-image {
         width: 100%;
-        height: 250px;
+        flex: 1;
+        min-height: 200px;
         background: rgba(100, 150, 255, 0.15);
         border: 2px solid rgba(100, 150, 255, 0.4);
         border-radius: 10px;
