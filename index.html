@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>Galeri Pendopo Batik 3D</title>
     <style>
       body {
@@ -371,6 +371,192 @@
         background: rgba(150, 150, 150, 0.3);
         color: #fff;
       }
+
+      /* ID Card Style Info Modal */
+      #info-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.3);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2500;
+        pointer-events: auto;
+      }
+
+      #info-modal-overlay.active {
+        display: flex;
+      }
+
+      #info-modal-overlay.active ~ * {
+        pointer-events: none;
+      }
+
+      .info-modal-container {
+        background: linear-gradient(
+          135deg,
+          rgba(20, 20, 40, 0.98) 0%,
+          rgba(30, 30, 55, 0.98) 100%
+        );
+        border-radius: 16px;
+        width: 90%;
+        max-width: 600px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        border: 2px solid rgba(100, 150, 255, 0.4);
+        overflow: hidden;
+        animation: modalAppear 0.3s ease-out;
+        pointer-events: auto;
+      }
+
+      @keyframes modalAppear {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .info-modal-header {
+        background: linear-gradient(
+          135deg,
+          rgba(70, 130, 180, 0.8) 0%,
+          rgba(100, 150, 255, 0.6) 100%
+        );
+        padding: 25px;
+        border-bottom: 2px solid rgba(100, 150, 255, 0.5);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+      }
+
+      .info-modal-header h2 {
+        margin: 0;
+        font-size: 28px;
+        color: #fff;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        flex: 1;
+        text-transform: capitalize;
+      }
+
+      .info-modal-close-btn {
+        background: rgba(255, 50, 50, 0.2);
+        border: 2px solid #ff6b6b;
+        color: #ff6b6b;
+        width: 40px;
+        height: 40px;
+        font-size: 24px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        font-weight: bold;
+        pointer-events: auto;
+      }
+
+      .info-modal-close-btn:hover {
+        background: rgba(255, 50, 50, 0.4);
+        transform: scale(1.1) rotate(90deg);
+      }
+
+      .info-modal-body {
+        padding: 30px;
+        display: grid;
+        grid-template-columns: 250px 1fr;
+        gap: 30px;
+        color: #fff;
+      }
+
+      .info-modal-preview {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+      }
+
+      .info-modal-preview-image {
+        width: 100%;
+        height: 250px;
+        background: rgba(100, 150, 255, 0.15);
+        border: 2px solid rgba(100, 150, 255, 0.4);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        margin-bottom: 15px;
+        font-size: 14px;
+        color: #888;
+      }
+
+      .info-modal-preview-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .info-modal-preview-label {
+        text-align: center;
+        font-size: 12px;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .info-modal-content {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .info-field {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .info-field-label {
+        font-size: 14px;
+        font-weight: bold;
+        color: #64b5f6;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      .info-field-value {
+        font-size: 14px;
+        color: #e0e0e0;
+        line-height: 1.6;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.3);
+        border-left: 3px solid rgba(100, 150, 255, 0.6);
+        border-radius: 4px;
+      }
+
+      .info-field-value.empty {
+        color: #888;
+        font-style: italic;
+      }
+
+      /* Disable interaction when modal is open */
+      #info-modal-overlay.active {
+        pointer-events: auto;
+      }
+
+      #info-modal-overlay.active + #crosshair,
+      #info-modal-overlay.active + #crosshair + #interaction-prompt {
+        pointer-events: none;
+      }
     </style>
   </head>
   <body>
@@ -472,6 +658,48 @@
 
     <div id="crosshair"></div>
 
+    <!-- ID Card Style Info Modal -->
+    <div id="info-modal-overlay">
+      <div class="info-modal-container">
+        <div class="info-modal-header">
+          <h2 id="info-modal-title">Object Info</h2>
+          <button class="info-modal-close-btn" id="info-modal-close-btn">
+            ×
+          </button>
+        </div>
+        <div class="info-modal-body">
+          <div class="info-modal-preview">
+            <div class="info-modal-preview-image">
+              <img
+                id="info-modal-preview-img"
+                src=""
+                alt="Object Preview"
+                style="display: none"
+              />
+              <span id="info-modal-preview-placeholder"
+                >No Preview Available</span
+              >
+            </div>
+            <div class="info-modal-preview-label">Object Preview</div>
+          </div>
+          <div class="info-modal-content">
+            <div class="info-field">
+              <div class="info-field-label">Description</div>
+              <div class="info-field-value" id="info-modal-description">
+                <span class="empty">No description available</span>
+              </div>
+            </div>
+            <div class="info-field">
+              <div class="info-field-label">Philosophy</div>
+              <div class="info-field-value" id="info-modal-philosophy">
+                <span class="empty">No philosophy available</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Interaction Prompt -->
     <div id="interaction-prompt">
       Press <span class="key">E</span> to view info
@@ -492,9 +720,7 @@
         <div id="motif-selection">
           <div class="canting-header">
             <h1 class="canting-title">🎨 Virtual Canting</h1>
-            <p class="canting-subtitle">
-              Choose a batik motif to apply
-            </p>
+            <p class="canting-subtitle">Choose a batik motif to apply</p>
           </div>
 
           <div class="motif-grid">
@@ -517,9 +743,7 @@
             </div>
           </div>
 
-          <button class="close-btn" onclick="closeCantingModal()">
-            Close
-          </button>
+          <button class="close-btn" onclick="closeCantingModal()">Close</button>
         </div>
 
         <!-- Canvas Screen (Drawing) -->
