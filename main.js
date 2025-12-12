@@ -483,7 +483,9 @@ function init() {
         // Toggle cursor visibility with C key
         if (controls.isLocked) {
           controls.unlock();
-          console.log("🔓 Cursor unlocked - Press mouse button or ESC to lock again");
+          console.log(
+            "🔓 Cursor unlocked - Press mouse button or ESC to lock again"
+          );
         } else {
           controls.lock();
           console.log("🔒 Cursor locked");
@@ -542,8 +544,8 @@ function init() {
         ) {
           // Only extract if it has REAL metadata (description must exist)
           // Skip child nodes like batik_name_1 or technical nodes without metadata
-          const hasRealMetadata = 
-            child.userData.description && 
+          const hasRealMetadata =
+            child.userData.description &&
             child.userData.description.trim().length > 0;
 
           if (hasRealMetadata) {
@@ -1013,7 +1015,9 @@ function updateDebugPanel(metadata) {
     return;
   }
 
-  let html = `<p style="color: #4a9eff; margin: 0 0 12px 0;">✅ Found ${Object.keys(metadata).length} batik objects:</p>`;
+  let html = `<p style="color: #4a9eff; margin: 0 0 12px 0;">✅ Found ${
+    Object.keys(metadata).length
+  } batik objects:</p>`;
 
   for (const [objectName, data] of Object.entries(metadata)) {
     html += `
@@ -1037,8 +1041,8 @@ function updateDebugPanel(metadata) {
             Array.isArray(data.philosophy)
               ? `${data.philosophy.length} items`
               : typeof data.philosophy === "string"
-                ? data.philosophy.substring(0, 40) + "..."
-                : '<em style="color:#888;">(empty)</em>'
+              ? data.philosophy.substring(0, 40) + "..."
+              : '<em style="color:#888;">(empty)</em>'
           }</div>
         </div>
       </div>
