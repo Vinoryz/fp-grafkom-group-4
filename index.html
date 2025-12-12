@@ -384,11 +384,12 @@
         align-items: center;
         justify-content: center;
         z-index: 2500;
-        pointer-events: auto;
+        pointer-events: none;
       }
 
       #info-modal-overlay.active {
         display: flex;
+        pointer-events: auto;
       }
 
       #info-modal-overlay.active ~ * {
@@ -565,6 +566,113 @@
       #info-modal-overlay.active + #crosshair + #interaction-prompt {
         pointer-events: none;
       }
+
+      /* Metadata Debug Panel */
+      .metadata-debug-panel {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 400px;
+        max-height: 500px;
+        background: rgba(20, 30, 50, 0.95);
+        border: 2px solid #4a9eff;
+        border-radius: 8px;
+        padding: 0;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        color: #0f0;
+        z-index: 2600;
+        box-shadow: 0 0 20px rgba(74, 158, 255, 0.5);
+        pointer-events: auto;
+      }
+
+      .debug-header {
+        background: linear-gradient(135deg, #1a3a52 0%, #0d1f2d 100%);
+        padding: 12px;
+        border-bottom: 1px solid #4a9eff;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+      }
+
+      .debug-header h3 {
+        margin: 0;
+        font-size: 14px;
+        color: #4a9eff;
+      }
+
+      .toggle-debug-btn {
+        background: #4a9eff;
+        border: none;
+        color: #000;
+        width: 28px;
+        height: 28px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 16px;
+        transition: all 0.3s;
+      }
+
+      .toggle-debug-btn:hover {
+        background: #6bb3ff;
+        transform: scale(1.1);
+      }
+
+      .metadata-content {
+        padding: 12px;
+        max-height: 450px;
+        overflow-y: auto;
+        background: rgba(10, 20, 35, 0.8);
+      }
+
+      .metadata-content::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .metadata-content::-webkit-scrollbar-track {
+        background: rgba(74, 158, 255, 0.1);
+      }
+
+      .metadata-content::-webkit-scrollbar-thumb {
+        background: #4a9eff;
+        border-radius: 3px;
+      }
+
+      .metadata-entry {
+        margin-bottom: 12px;
+        padding: 10px;
+        background: rgba(74, 158, 255, 0.1);
+        border-left: 3px solid #4a9eff;
+        border-radius: 4px;
+      }
+
+      .metadata-entry-name {
+        color: #4a9eff;
+        font-weight: bold;
+        margin-bottom: 4px;
+      }
+
+      .metadata-entry-value {
+        color: #0f0;
+        font-size: 11px;
+        margin: 2px 0;
+        word-break: break-word;
+      }
+
+      .metadata-entry-label {
+        color: #aaa;
+        font-size: 10px;
+      }
+
+      .metadata-debug-panel.collapsed .metadata-content {
+        display: none;
+      }
+
+      .metadata-debug-panel.collapsed .toggle-debug-btn::after {
+        content: '+';
+      }
     </style>
   </head>
   <body>
@@ -661,6 +769,17 @@
       <div>Click to Resume</div>
       <div style="font-size: 16px; margin-top: 20px; opacity: 0.7">
         WASD to move | Mouse to look | ESC to pause
+      </div>
+    </div>
+
+    <!-- Metadata Debug Panel -->
+    <div id="metadata-debug-panel" class="metadata-debug-panel">
+      <div class="debug-header">
+        <h3>📚 Metadata Debug Panel</h3>
+        <button id="toggle-debug" class="toggle-debug-btn">−</button>
+      </div>
+      <div id="metadata-content" class="metadata-content">
+        <p style="color: #888;">Loading metadata...</p>
       </div>
     </div>
 

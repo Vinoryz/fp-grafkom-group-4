@@ -479,6 +479,16 @@ function init() {
           openCantingModal();
         }
         break;
+      case "KeyC":
+        // Toggle cursor visibility with C key
+        if (controls.isLocked) {
+          controls.unlock();
+          console.log("🔓 Cursor unlocked - Press mouse button or ESC to lock again");
+        } else {
+          controls.lock();
+          console.log("🔒 Cursor locked");
+        }
+        break;
     }
   };
 
@@ -530,28 +540,40 @@ function init() {
           child.name &&
           child.name.toLowerCase().includes("batik")
         ) {
-          const batikName = child.name;
+          // Only extract if it has REAL metadata (description must exist)
+          // Skip child nodes like batik_name_1 or technical nodes without metadata
+          const hasRealMetadata = 
+            child.userData.description && 
+            child.userData.description.trim().length > 0;
 
-          // Store metadata with the batik name as key
-          glbBatikMetadata[batikName] = {
-            name: child.userData.name || batikName,
-            description: child.userData.description || "",
-            philosophy: child.userData.philosophy || [],
-          };
+          if (hasRealMetadata) {
+            const batikName = child.name;
+            // Clean the name before storing (removes _1, _2, hyphens, etc.)
+            const cleanedBatikName = cleanBatikName(batikName);
 
-          console.log(
-            `📚 Loaded metadata for ${batikName}:`,
-            glbBatikMetadata[batikName]
-          );
+            // Store metadata with the CLEANED batik name as key
+            glbBatikMetadata[cleanedBatikName] = {
+              name: child.userData.name || cleanedBatikName,
+              description: child.userData.description || "",
+              philosophy: child.userData.philosophy || [],
+            };
+
+            console.log(
+              `📚 Loaded metadata for ${batikName} → stored as ${cleanedBatikName}:`,
+              glbBatikMetadata[cleanedBatikName]
+            );
+          }
         }
       });
 
       if (Object.keys(glbBatikMetadata).length > 0) {
         console.log("✅ All embedded batik metadata loaded:", glbBatikMetadata);
+        updateDebugPanel(glbBatikMetadata); // Show on screen
       } else {
         console.log(
           "⚠️ No embedded batik metadata found in GLB - will use hardcoded fallback"
         );
+        updateDebugPanel({}); // Show empty state
       }
       // ===== End: Extract metadata =====
 
@@ -677,6 +699,9 @@ function init() {
 
   // Setup Canting Modal Event Listeners (backup for onclick)
   document.addEventListener("DOMContentLoaded", function () {
+    // Initialize debug panel
+    initDebugPanel();
+
     // Info Modal Close Button
     const infoModalCloseBtn = document.getElementById("info-modal-close-btn");
     if (infoModalCloseBtn) {
@@ -744,11 +769,14 @@ function isBatikObject(name, parentName) {
 // Clean up object names by removing technical suffixes
 function cleanBatikName(objectName) {
   // Remove technical suffixes like .obj, .Cleaner, .MaterialMerger, .Gles, etc.
+  // Also remove _1, _2, etc. and hyphens that replace underscores
   let cleaned = objectName
     .replace(/\.obj.*$/i, "") // Remove everything after .obj
     .replace(/\.cleaner.*$/i, "") // Remove everything after .cleaner
     .replace(/\.materialmerger.*$/i, "") // Remove everything after .materialmerger
     .replace(/\.gles.*$/i, "") // Remove everything after .gles
+    .replace(/_\d+$/, "") // Remove _1, _2, etc. at the end
+    .replace(/-/g, "_") // Convert hyphens to underscores for consistency
     .trim();
 
   return cleaned;
@@ -958,6 +986,67 @@ function closeInfoModal() {
   }, 100);
 
   console.log("Info modal closed");
+}
+
+// Debug panel functions
+function initDebugPanel() {
+  const debugPanel = document.getElementById("metadata-debug-panel");
+  const toggleBtn = document.getElementById("toggle-debug");
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      debugPanel.classList.toggle("collapsed");
+      toggleBtn.textContent = debugPanel.classList.contains("collapsed")
+        ? "+"
+        : "−";
+    });
+  }
+}
+
+function updateDebugPanel(metadata) {
+  const metadataContent = document.getElementById("metadata-content");
+
+  if (Object.keys(metadata).length === 0) {
+    metadataContent.innerHTML =
+      '<p style="color: #f88;">⚠️ No metadata found in GLB</p>';
+    return;
+  }
+
+  let html = `<p style="color: #4a9eff; margin: 0 0 12px 0;">✅ Found ${Object.keys(metadata).length} batik objects:</p>`;
+
+  for (const [objectName, data] of Object.entries(metadata)) {
+    html += `
+      <div class="metadata-entry">
+        <div class="metadata-entry-name">📦 ${objectName}</div>
+        <div class="metadata-entry-value">
+          <div class="metadata-entry-label">Name:</div>
+          <div>${data.name || '<em style="color:#888;">(empty)</em>'}</div>
+        </div>
+        <div class="metadata-entry-value">
+          <div class="metadata-entry-label">Description:</div>
+          <div>${
+            data.description
+              ? data.description.substring(0, 60) + "..."
+              : '<em style="color:#888;">(empty)</em>'
+          }</div>
+        </div>
+        <div class="metadata-entry-value">
+          <div class="metadata-entry-label">Philosophy:</div>
+          <div>${
+            Array.isArray(data.philosophy)
+              ? `${data.philosophy.length} items`
+              : typeof data.philosophy === "string"
+                ? data.philosophy.substring(0, 40) + "..."
+                : '<em style="color:#888;">(empty)</em>'
+          }</div>
+        </div>
+      </div>
+    `;
+  }
+
+  metadataContent.innerHTML = html;
+  console.log("📊 Debug panel updated with metadata");
 }
 
 // Update info panel visibility
