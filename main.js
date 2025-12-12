@@ -6,10 +6,12 @@ let camera, scene, renderer, controls;
 let moveForward = false,
   moveBackward = false,
   moveLeft = false,
-  moveRight = false;
+  moveRight = false,
+  isSprinting = false;
 let velocity = new THREE.Vector3();
 let direction = new THREE.Vector3();
 const moveSpeed = 160.0;
+const sprintMultiplier = 2;
 let prevTime = performance.now();
 let frameCount = 0;
 let logInterval = 0;
@@ -63,98 +65,118 @@ const modelPath = "./scene.glb";
 function openCantingModal() {
   isCantingModalOpen = true;
   controls.unlock();
-  document.getElementById('canting-modal').style.display = 'flex';
-  console.log('Canting modal opened!');
+  document.getElementById("canting-modal").style.display = "flex";
+  console.log("Canting modal opened!");
 }
 
 function closeCantingModal() {
   isCantingModalOpen = false;
-  document.getElementById('canting-modal').style.display = 'none';
+  document.getElementById("canting-modal").style.display = "none";
   controls.lock();
-  console.log('Canting modal closed!');
+  console.log("Canting modal closed!");
 }
 
 function selectMotif(motifPath) {
-  console.log('Selected motif:', motifPath);
-  
+  console.log("Selected motif:", motifPath);
+
   // Hide selection screen, show canvas screen
-  document.getElementById('motif-selection').style.display = 'none';
-  document.getElementById('canvas-screen').style.display = 'flex';
-  
+  document.getElementById("motif-selection").style.display = "none";
+  document.getElementById("canvas-screen").style.display = "flex";
+
   // Initialize canvas
   initCantingCanvas(motifPath);
 }
 
-let cantingCanvas, cantingCtx, isDrawing = false;
+let cantingCanvas,
+  cantingCtx,
+  isDrawing = false;
 let bgImageLoaded = false; // Track if background image is loaded
 
 function initCantingCanvas(motifPath) {
-  console.log('🎨 Initializing canvas with motif:', motifPath);
-  
+  console.log("🎨 Initializing canvas with motif:", motifPath);
+
   // Reset revealed areas
   revealedAreas = [];
   drawCount = 0;
-  
-  cantingCanvas = document.getElementById('canting-canvas');
-  cantingCtx = cantingCanvas.getContext('2d');
-  
+
+  cantingCanvas = document.getElementById("canting-canvas");
+  cantingCtx = cantingCanvas.getContext("2d");
+
   // Set canvas size
   cantingCanvas.width = 600;
   cantingCanvas.height = 600;
-  
-  console.log('📐 Canvas size set:', cantingCanvas.width, 'x', cantingCanvas.height);
-  
+
+  console.log(
+    "📐 Canvas size set:",
+    cantingCanvas.width,
+    "x",
+    cantingCanvas.height
+  );
+
   // Load background image
   const bgImage = new Image();
   bgImage.src = motifPath;
-  bgImage.onload = function() {
-    console.log('✅ Background image loaded successfully!');
-    
+  bgImage.onload = function () {
+    console.log("✅ Background image loaded successfully!");
+
     // Store the background image for persistent rendering
     cantingCanvas.bgImage = bgImage;
-    
+
     // Draw background
-    cantingCtx.drawImage(bgImage, 0, 0, cantingCanvas.width, cantingCanvas.height);
-    console.log('🖼️ Background drawn on canvas');
-    
+    cantingCtx.drawImage(
+      bgImage,
+      0,
+      0,
+      cantingCanvas.width,
+      cantingCanvas.height
+    );
+    console.log("🖼️ Background drawn on canvas");
+
     // Save the background state
-    const backgroundData = cantingCtx.getImageData(0, 0, cantingCanvas.width, cantingCanvas.height);
+    const backgroundData = cantingCtx.getImageData(
+      0,
+      0,
+      cantingCanvas.width,
+      cantingCanvas.height
+    );
     cantingCanvas.backgroundData = backgroundData;
-    
+
     // Cover with white layer
-    cantingCtx.fillStyle = 'white';
+    cantingCtx.fillStyle = "white";
     cantingCtx.fillRect(0, 0, cantingCanvas.width, cantingCanvas.height);
-    console.log('⬜ White layer applied on top');
-    
+    console.log("⬜ White layer applied on top");
+
     bgImageLoaded = true;
-    console.log('Canvas initialized with motif:', motifPath);
-    console.log('👆 Now try dragging your mouse on the canvas to reveal the pattern!');
+    console.log("Canvas initialized with motif:", motifPath);
+    console.log(
+      "👆 Now try dragging your mouse on the canvas to reveal the pattern!"
+    );
   };
-  
-  bgImage.onerror = function() {
-    console.error('❌ Failed to load motif image:', motifPath);
-    console.error('Make sure the file exists at:', motifPath);
+
+  bgImage.onerror = function () {
+    console.error("❌ Failed to load motif image:", motifPath);
+    console.error("Make sure the file exists at:", motifPath);
     // Fallback: just show white canvas
-    cantingCtx.fillStyle = 'white';
+    cantingCtx.fillStyle = "white";
     cantingCtx.fillRect(0, 0, cantingCanvas.width, cantingCanvas.height);
     bgImageLoaded = false;
   };
-  
+
   // Store motif path for finish button
   cantingCanvas.dataset.motifPath = motifPath;
-  
+
   // Setup mouse events
-  cantingCanvas.addEventListener('mousedown', startDrawing);
-  cantingCanvas.addEventListener('mousemove', draw);
-  cantingCanvas.addEventListener('mouseup', stopDrawing);
-  cantingCanvas.addEventListener('mouseleave', stopDrawing);
-  
-  console.log('🖱️ Mouse event listeners attached to canvas');
+  cantingCanvas.addEventListener("mousedown", startDrawing);
+  cantingCanvas.addEventListener("mousemove", draw);
+  cantingCanvas.addEventListener("mouseup", stopDrawing);
+  cantingCanvas.addEventListener("mouseleave", stopDrawing);
+
+  console.log("🖱️ Mouse event listeners attached to canvas");
 }
 
 function startDrawing(e) {
   isDrawing = true;
-  console.log('🖌️ Drawing started at:', e.clientX, e.clientY);
+  console.log("🖌️ Drawing started at:", e.clientX, e.clientY);
   draw(e);
 }
 
@@ -163,113 +185,123 @@ let revealedAreas = []; // Store areas that have been revealed
 
 function draw(e) {
   if (!isDrawing) return;
-  
+
   const rect = cantingCanvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
-  
+
   // Log every 10th draw to avoid spam
   if (drawCount % 10 === 0) {
-    console.log('✏️ Drawing at canvas position:', Math.round(x), Math.round(y));
+    console.log("✏️ Drawing at canvas position:", Math.round(x), Math.round(y));
   }
   drawCount++;
-  
+
   // Store revealed area
-  revealedAreas.push({x, y, radius: 60});
-  
+  revealedAreas.push({ x, y, radius: 60 });
+
   // Redraw entire canvas: background first, then white layer with holes
   redrawCanvas();
 }
 
 function redrawCanvas() {
   if (!cantingCanvas.bgImage) {
-    console.warn('⚠️ Background image not loaded yet!');
+    console.warn("⚠️ Background image not loaded yet!");
     return;
   }
-  
+
   // Clear canvas
   cantingCtx.clearRect(0, 0, cantingCanvas.width, cantingCanvas.height);
-  
+
   // Step 1: Draw the background pattern
-  cantingCtx.drawImage(cantingCanvas.bgImage, 0, 0, cantingCanvas.width, cantingCanvas.height);
-  
+  cantingCtx.drawImage(
+    cantingCanvas.bgImage,
+    0,
+    0,
+    cantingCanvas.width,
+    cantingCanvas.height
+  );
+
   // Step 2: Use a mask approach - draw white everywhere EXCEPT where user has drawn
   // Set composite mode to draw white on top
-  cantingCtx.globalCompositeOperation = 'source-over';
-  
+  cantingCtx.globalCompositeOperation = "source-over";
+
   // Create a temporary canvas for the white mask
   if (!cantingCanvas.maskCanvas) {
-    cantingCanvas.maskCanvas = document.createElement('canvas');
+    cantingCanvas.maskCanvas = document.createElement("canvas");
     cantingCanvas.maskCanvas.width = cantingCanvas.width;
     cantingCanvas.maskCanvas.height = cantingCanvas.height;
-    cantingCanvas.maskCtx = cantingCanvas.maskCanvas.getContext('2d');
+    cantingCanvas.maskCtx = cantingCanvas.maskCanvas.getContext("2d");
   }
-  
+
   const maskCtx = cantingCanvas.maskCtx;
-  
+
   // Clear mask canvas and fill with white
   maskCtx.clearRect(0, 0, cantingCanvas.width, cantingCanvas.height);
-  maskCtx.fillStyle = 'white';
+  maskCtx.fillStyle = "white";
   maskCtx.fillRect(0, 0, cantingCanvas.width, cantingCanvas.height);
-  
+
   // Cut holes in the mask where user has drawn
-  maskCtx.globalCompositeOperation = 'destination-out';
+  maskCtx.globalCompositeOperation = "destination-out";
   for (let area of revealedAreas) {
     maskCtx.beginPath();
     maskCtx.arc(area.x, area.y, area.radius, 0, Math.PI * 2);
     maskCtx.fill();
   }
-  maskCtx.globalCompositeOperation = 'source-over';
-  
+  maskCtx.globalCompositeOperation = "source-over";
+
   // Now draw the mask on top of the background
   cantingCtx.drawImage(cantingCanvas.maskCanvas, 0, 0);
-  
+
   // Log only on first few redraws
   if (revealedAreas.length <= 3) {
-    console.log('🔄 Canvas redrawn with', revealedAreas.length, 'revealed areas');
+    console.log(
+      "🔄 Canvas redrawn with",
+      revealedAreas.length,
+      "revealed areas"
+    );
   }
 }
 
 function stopDrawing() {
   if (isDrawing) {
-    console.log('🛑 Drawing stopped. Total strokes:', drawCount);
+    console.log("🛑 Drawing stopped. Total strokes:", drawCount);
   }
   isDrawing = false;
 }
 
 function finishCanting() {
   const motifPath = cantingCanvas.dataset.motifPath;
-  
+
   if (!cantingObject || !motifPath) {
-    console.error('Cannot apply texture: object or motif not found');
+    console.error("Cannot apply texture: object or motif not found");
     return;
   }
-  
+
   // Load texture and apply to Object_3_4
   const textureLoader = new THREE.TextureLoader();
   textureLoader.load(
     motifPath,
-    function(texture) {
+    function (texture) {
       // Apply texture to the object with double-sided rendering
       cantingObject.material = new THREE.MeshStandardMaterial({
         map: texture,
         roughness: 0.7,
         metalness: 0.1,
-        side: THREE.DoubleSide  // Render both front and back
+        side: THREE.DoubleSide, // Render both front and back
       });
-      
-      console.log('Texture applied to Object_3_4 (double-sided)!');
-      
+
+      console.log("Texture applied to Object_3_4 (double-sided)!");
+
       // Close modal and return to game
       closeCantingModal();
-      
+
       // Reset canvas screen
-      document.getElementById('canvas-screen').style.display = 'none';
-      document.getElementById('motif-selection').style.display = 'block';
+      document.getElementById("canvas-screen").style.display = "none";
+      document.getElementById("motif-selection").style.display = "block";
     },
     undefined,
-    function(error) {
-      console.error('Failed to load texture:', error);
+    function (error) {
+      console.error("Failed to load texture:", error);
     }
   );
 }
@@ -280,11 +312,11 @@ window.closeCantingModal = closeCantingModal;
 window.selectMotif = selectMotif;
 window.finishCanting = finishCanting;
 
-console.log('Canting functions exposed to window:', {
+console.log("Canting functions exposed to window:", {
   openCantingModal: typeof window.openCantingModal,
   closeCantingModal: typeof window.closeCantingModal,
   selectMotif: typeof window.selectMotif,
-  finishCanting: typeof window.finishCanting
+  finishCanting: typeof window.finishCanting,
 });
 
 init();
@@ -304,12 +336,12 @@ function init() {
   // 2.1 Setup Skybox
   const skyboxLoader = new THREE.CubeTextureLoader();
   const skyboxTexture = skyboxLoader.load([
-    './assets/skybox/texture_desa.jpg', // right
-    './assets/skybox/texture_desa.jpg', // left
-    './assets/skybox/texture_langit.jpg', // top
-    './assets/skybox/texture_langit.jpg', // bottom
-    './assets/skybox/texture_desa.jpg', // front
-    './assets/skybox/texture_desa.jpg', // back
+    "./assets/skybox/texture_desa.jpg", // right
+    "./assets/skybox/texture_desa.jpg", // left
+    "./assets/skybox/texture_langit.jpg", // top
+    "./assets/skybox/texture_langit.jpg", // bottom
+    "./assets/skybox/texture_desa.jpg", // front
+    "./assets/skybox/texture_desa.jpg", // back
   ]);
   scene.background = skyboxTexture;
 
@@ -370,6 +402,10 @@ function init() {
       case "KeyD":
         moveRight = true;
         break;
+      case "ShiftLeft":
+      case "ShiftRight":
+        isSprinting = true;
+        break;
       case "KeyE":
         // Toggle info panel when E is pressed
         if (currentInteractableObject && controls.isLocked) {
@@ -379,7 +415,11 @@ function init() {
         break;
       case "KeyQ":
         // Open Canting modal when Q is pressed on Object_3_4
-        if (isLookingAtCantingObject && controls.isLocked && !isCantingModalOpen) {
+        if (
+          isLookingAtCantingObject &&
+          controls.isLocked &&
+          !isCantingModalOpen
+        ) {
           openCantingModal();
         }
         break;
@@ -399,6 +439,10 @@ function init() {
         break;
       case "KeyD":
         moveRight = false;
+        break;
+      case "ShiftLeft":
+      case "ShiftRight":
+        isSprinting = false;
         break;
     }
   };
@@ -463,24 +507,31 @@ function init() {
       model.traverse((child) => {
         if (child.isMesh) {
           const name = child.name.toLowerCase();
-          
+
           // Check the mesh's PARENT name (because paving/lantai are parent groups)
-          const parentName = child.parent?.name?.toLowerCase() || '';
-          
+          const parentName = child.parent?.name?.toLowerCase() || "";
+
           // Identify ground objects by checking both mesh name AND parent name
-          if (name.includes('paving') || 
-              name.includes('lantai') || 
-              name.includes('ramp') || 
-              parentName.includes('paving') ||
-              parentName.includes('lantai') ||
-              parentName.includes('ramp')) {
+          if (
+            name.includes("paving") ||
+            name.includes("lantai") ||
+            name.includes("ramp") ||
+            parentName.includes("paving") ||
+            parentName.includes("lantai") ||
+            parentName.includes("ramp")
+          ) {
             groundObjects.push(child);
-            console.log("Ground object found:", child.name, "| Parent:", child.parent?.name);
+            console.log(
+              "Ground object found:",
+              child.name,
+              "| Parent:",
+              child.parent?.name
+            );
           } else {
             // Everything else is a non-ground object
             nonGroundObjects.push(child);
           }
-          
+
           // All objects can still be collided with horizontally
           collidableObjects.push(child);
         }
@@ -493,26 +544,28 @@ function init() {
 
       // Virtual Canting: Find Object_3_4 and make it white
       model.traverse((child) => {
-        if (child.isMesh && child.name === 'Object_3_4') {
+        if (child.isMesh && child.name === "Object_3_4") {
           cantingObject = child;
           cantingOriginalMaterial = child.material.clone();
-          
+
           // Make it pure white initially with double-sided rendering
           child.material = new THREE.MeshStandardMaterial({
             color: 0xffffff,
             roughness: 0.7,
             metalness: 0.1,
-            side: THREE.DoubleSide  // Render both front and back
+            side: THREE.DoubleSide, // Render both front and back
           });
-          
-          console.log('Virtual Canting: Object_3_4 found and set to white (double-sided)!');
+
+          console.log(
+            "Virtual Canting: Object_3_4 found and set to white (double-sided)!"
+          );
         }
       });
 
       model.traverse((child) => {
-        if (child.name === 'Object_14' || child.name === 'paving') {
+        if (child.name === "Object_14" || child.name === "paving") {
           const textureLoader = new THREE.TextureLoader();
-          const grassMap = textureLoader.load('./assets/texture_grass.jpg')
+          const grassMap = textureLoader.load("./assets/texture_grass.jpg");
           grassMap.wrapS = THREE.RepeatWrapping;
           grassMap.wrapT = THREE.RepeatWrapping;
           grassMap.repeat.set(10, 10);
@@ -536,39 +589,39 @@ function init() {
   );
   // Handle Resize Window
   window.addEventListener("resize", onWindowResize);
-  
+
   // Setup Canting Modal Event Listeners (backup for onclick)
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener("DOMContentLoaded", function () {
     // Close button
-    const closeBtn = document.querySelector('.close-btn');
+    const closeBtn = document.querySelector(".close-btn");
     if (closeBtn) {
-      closeBtn.addEventListener('click', closeCantingModal);
+      closeBtn.addEventListener("click", closeCantingModal);
     }
-    
+
     // Motif selection
-    const motifCard = document.querySelector('.motif-card');
+    const motifCard = document.querySelector(".motif-card");
     if (motifCard) {
-      motifCard.addEventListener('click', function() {
-        selectMotif('./assets/megamendung.jpg');
+      motifCard.addEventListener("click", function () {
+        selectMotif("./assets/megamendung.jpg");
       });
     }
-    
+
     // Finish button
-    const finishBtn = document.querySelector('.finish-btn');
+    const finishBtn = document.querySelector(".finish-btn");
     if (finishBtn) {
-      finishBtn.addEventListener('click', finishCanting);
+      finishBtn.addEventListener("click", finishCanting);
     }
-    
+
     // Back button
-    const backBtn = document.querySelector('.back-btn');
+    const backBtn = document.querySelector(".back-btn");
     if (backBtn) {
-      backBtn.addEventListener('click', function() {
-        document.getElementById('canvas-screen').style.display = 'none';
-        document.getElementById('motif-selection').style.display = 'block';
+      backBtn.addEventListener("click", function () {
+        document.getElementById("canvas-screen").style.display = "none";
+        document.getElementById("motif-selection").style.display = "block";
       });
     }
-    
-    console.log('Canting modal event listeners attached!');
+
+    console.log("Canting modal event listeners attached!");
   });
 }
 
@@ -581,14 +634,16 @@ function onWindowResize() {
 // Check if object name indicates it's a plane
 function isBatikObject(name, parentName) {
   if (!name && !parentName) return false;
-  
-  const lowerName = name ? name.toLowerCase() : '';
-  const lowerParentName = parentName ? parentName.toLowerCase() : '';
-  
+
+  const lowerName = name ? name.toLowerCase() : "";
+  const lowerParentName = parentName ? parentName.toLowerCase() : "";
+
   // Check if the object name or parent name contains 'batik'
-  return lowerName.includes("batik") || 
-         lowerParentName.includes("batik") ||
-         lowerParentName.startsWith("batik_");
+  return (
+    lowerName.includes("batik") ||
+    lowerParentName.includes("batik") ||
+    lowerParentName.startsWith("batik_")
+  );
 }
 
 // Update info panel visibility
@@ -637,24 +692,27 @@ function updateRaycaster() {
     const parentName = objectHit.parent?.name || "";
 
     // Check if this is Object_3_4 (Canting object)
-    const isCantingObj = displayName === 'Object_3_4';
+    const isCantingObj = displayName === "Object_3_4";
 
     // Check if this is a plane and within interaction distance
     const isBatik = isBatikObject(displayName, parentName);
-    const canInteract = (isBatik || isCantingObj) && distance <= INTERACTION_DISTANCE;
+    const canInteract =
+      (isBatik || isCantingObj) && distance <= INTERACTION_DISTANCE;
 
     if (canInteract) {
       // Show interaction prompt
       currentInteractableObject = objectHit;
       isLookingAtCantingObject = isCantingObj;
-      
+
       // Update prompt text based on object type
       if (isCantingObj) {
-        interactionPrompt.innerHTML = 'Press <span class="key">E</span> to view info | <span class="key">Q</span> to use Canting';
+        interactionPrompt.innerHTML =
+          'Press <span class="key">E</span> to view info | <span class="key">Q</span> to use Canting';
       } else {
-        interactionPrompt.innerHTML = 'Press <span class="key">E</span> to view info';
+        interactionPrompt.innerHTML =
+          'Press <span class="key">E</span> to view info';
       }
-      
+
       interactionPrompt.classList.add("visible");
 
       // Build info HTML (will be shown when E is pressed)
@@ -808,8 +866,11 @@ function adjustHeightToGround() {
   );
 
   // Check ALL objects first to see what's directly below
-  const allIntersections = downRaycaster.intersectObjects(collidableObjects, false);
-  
+  const allIntersections = downRaycaster.intersectObjects(
+    collidableObjects,
+    false
+  );
+
   if (allIntersections.length === 0) {
     // Nothing below at all
     if (frameCount % 30 === 0) {
@@ -823,12 +884,18 @@ function adjustHeightToGround() {
   const closestDistance = closestObject.distance;
 
   // Now check if that closest object is actually ground
-  const groundIntersections = downRaycaster.intersectObjects(groundObjects, false);
-  
+  const groundIntersections = downRaycaster.intersectObjects(
+    groundObjects,
+    false
+  );
+
   if (groundIntersections.length === 0) {
     // No ground objects below at all
     if (frameCount % 30 === 0) {
-      console.log("WARNING: No ground below! Standing on:", closestObject.object.name);
+      console.log(
+        "WARNING: No ground below! Standing on:",
+        closestObject.object.name
+      );
     }
     return false;
   }
@@ -853,7 +920,9 @@ function adjustHeightToGround() {
     if (frameCount % 30 === 0) {
       console.log(
         `WARNING: Standing on obstacle "${closestObject.object.name}" ` +
-        `(${closestDistance.toFixed(2)}m below), ground is ${groundDistance.toFixed(2)}m below`
+          `(${closestDistance.toFixed(
+            2
+          )}m below), ground is ${groundDistance.toFixed(2)}m below`
       );
     }
     return false;
@@ -889,9 +958,12 @@ function animate() {
     direction.x = Number(moveRight) - Number(moveLeft);
     direction.normalize();
 
+    // Apply sprint multiplier if sprinting
+    const currentSpeed = isSprinting ? moveSpeed * sprintMultiplier : moveSpeed;
+
     if (moveForward || moveBackward)
-      velocity.z -= direction.z * moveSpeed * delta;
-    if (moveLeft || moveRight) velocity.x -= direction.x * moveSpeed * delta;
+      velocity.z -= direction.z * currentSpeed * delta;
+    if (moveLeft || moveRight) velocity.x -= direction.x * currentSpeed * delta;
 
     // Store old position for collision rollback
     const oldPosition = camera.position.clone();
@@ -913,7 +985,7 @@ function animate() {
       camera.position.copy(oldPosition);
     } else {
       const hasValidGround = adjustHeightToGround();
-      
+
       // If no valid ground detected, also rollback (prevents walking on objects)
       if (!hasValidGround) {
         camera.position.copy(oldPosition);
