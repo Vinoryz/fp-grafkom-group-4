@@ -745,12 +745,12 @@ function isBatikObject(name, parentName) {
 function cleanBatikName(objectName) {
   // Remove technical suffixes like .obj, .Cleaner, .MaterialMerger, .Gles, etc.
   let cleaned = objectName
-    .replace(/\.obj.*$/i, '') // Remove everything after .obj
-    .replace(/\.cleaner.*$/i, '') // Remove everything after .cleaner
-    .replace(/\.materialmerger.*$/i, '') // Remove everything after .materialmerger
-    .replace(/\.gles.*$/i, '') // Remove everything after .gles
+    .replace(/\.obj.*$/i, "") // Remove everything after .obj
+    .replace(/\.cleaner.*$/i, "") // Remove everything after .cleaner
+    .replace(/\.materialmerger.*$/i, "") // Remove everything after .materialmerger
+    .replace(/\.gles.*$/i, "") // Remove everything after .gles
     .trim();
-  
+
   return cleaned;
 }
 
@@ -758,9 +758,9 @@ function cleanBatikName(objectName) {
 function formatBatikName(batikName) {
   // Convert "batik_parang" to "Batik Parang"
   return batikName
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
 }
 
 // Open info modal with object data
