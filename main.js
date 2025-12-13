@@ -73,6 +73,69 @@ const batikObjectData = {
     philosophy:
       "The repetitive nature of Ceplokan symbolizes unity, consistency, and the interconnectedness of all things. Each small pattern contributes to the greater whole, reflecting how individual actions create collective beauty.",
   },
+  batik_tujuh_rupa: {
+    name: "Batik Tujuh Rupa",
+    description:
+      "Batik Tujuh Rupa merupakan salah satu batik khas dari daerah dengan motif yang beragam dan unik. Tujuh Rupa berarti tujuh warna atau tujuh corak yang menggambarkan keragaman.",
+    philosophy:
+      "Melambangkan keragaman, kesatuan dalam perbedaan, dan keindahan yang lahir dari kolaborasi berbagai elemen.",
+  },
+  batik_parang: {
+    name: "Batik Parang",
+    description:
+      "Merupakan salah satu batik khas dari budaya Jawa. Kata 'Parang' berarti golok atau pedang, dan pola diagonal yang miring ke kiri atau kanan melambangkan gerakan tegas dan gagah.",
+    philosophy:
+      "Melambangkan kekuatan, ketegasan, dan semangat untuk bergerak maju menghadapi tantangan.",
+  },
+  batik_kawung: {
+    name: "Batik Kawung",
+    description:
+      "Batik Kawung merupakan motif batik yang berasal dari Yogyakarta. Pola ini menampilkan bentuk lonjong atau berlian kecil yang tersusun secara teratur dan seimbang.",
+    philosophy:
+      "Melambangkan keharmonisan, keseimbangan, dan kesempurnaan dalam setiap aspek kehidupan.",
+  },
+  batik_betawi: {
+    name: "Batik Betawi",
+    description:
+      "Batik Betawi merupakan Batik yang asalnya dari Betawi. Motif dari batik ini menunjukkan pengaruh budaya Arab, Cina, dan Eropa yang bergabung menjadi identitas unik kota Jakarta.",
+    philosophy:
+      "Melambangkan keragaman budaya, seni, dan perpaduan tradisi yang harmonis.",
+  },
+  batik_sekar_jagad: {
+    name: "Batik Sekar Jagad",
+    description:
+      "Batik Sekar Jagad berasal dari kaart (peta, dalam bahasa Belanda). Motif ini menampilkan pola geometris yang kompleks dengan elemen-elemen kecil yang terintegrasi.",
+    philosophy:
+      "Melambangkan keluasan dunia, pengetahuan, dan eksplorasi tanpa batas.",
+  },
+  batik_simbut: {
+    name: "Batik Simbut",
+    description:
+      "Batik Simbut merupakan warisan budaya Indonesia yang berasal dari tradisi batik tulis kuno. Simbut berarti pusaran atau aliran yang menggambarkan gerakan halus dan elegan.",
+    philosophy:
+      "Melambangkan keindahan dalam gerakan, kelancaran, dan aliran energi positif yang terus bergerak.",
+  },
+  batik_sidokmuti: {
+    name: "Batik Sidokmuti",
+    description:
+      "Motif batik Sidomukti lahir di lingkungan keraton Jawa, khususnya Yogyakarta. 'Sido' berarti menjadi dan 'Mukti' berarti sejahtera, sehingga Sidomukti berarti 'menjadi sejahtera'.",
+    philosophy:
+      "Melambangkan harapan untuk kehidupan yang sejahtera, bahagia, dan berkelanjutan.",
+  },
+  batik_sogan: {
+    name: "Batik Sogan",
+    description:
+      "Batik ini memiliki akar sejarah yang kuat dari daerah Yogyakarta. Warna sogan (cokelat kekuningan) berasal dari pewarna alami yang tradisional dan memberikan kesan klasik serta elegan.",
+    philosophy:
+      "Melambangkan kestabilan, tradisi, dan kearifan lokal yang terus dihargai.",
+  },
+  batik_lereng: {
+    name: "Batik Lereng",
+    description:
+      "Batik Lereng adalah salah satu jenis batik dengan pola diagonal atau miring. Pola ini menciptakan kesan gerakan dan dinamika visual yang menarik perhatian.",
+    philosophy:
+      "Melambangkan gerakan, progres, dan dinamika yang terus berkembang dalam kehidupan.",
+  },
 };
 
 // Collision detection variables
@@ -773,10 +836,15 @@ function cleanBatikName(objectName) {
   // Remove technical suffixes like .obj, .Cleaner, .MaterialMerger, .Gles, etc.
   // Also remove _1, _2, etc. and hyphens that replace underscores
   let cleaned = objectName
+    .toLowerCase() // Convert to lowercase for consistent matching
     .replace(/\.obj.*$/i, "") // Remove everything after .obj
+    .replace(/obj.*$/i, "") // Remove "obj" and everything after (even without dot)
     .replace(/\.cleaner.*$/i, "") // Remove everything after .cleaner
+    .replace(/cleaner.*$/i, "") // Remove "cleaner" and everything after (even without dot)
     .replace(/\.materialmerger.*$/i, "") // Remove everything after .materialmerger
+    .replace(/materialmerger.*$/i, "") // Remove "materialmerger" and everything after (even without dot)
     .replace(/\.gles.*$/i, "") // Remove everything after .gles
+    .replace(/gles.*$/i, "") // Remove "gles" and everything after (even without dot)
     .replace(/_\d+$/, "") // Remove _1, _2, etc. at the end
     .replace(/-/g, "_") // Convert hyphens to underscores for consistency
     .trim();
