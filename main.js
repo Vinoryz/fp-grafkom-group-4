@@ -959,11 +959,12 @@ function openInfoModal(objectName) {
 
   document.getElementById("info-modal-philosophy").innerHTML = philosophyHTML;
 
-  // Reset preview image
+  // Reset preview image & header background
   const previewImg = document.getElementById("info-modal-preview-img");
   const previewPlaceholder = document.getElementById(
     "info-modal-preview-placeholder"
   );
+  const headerElement = document.querySelector(".info-modal-header");
   previewImg.style.display = "none";
   previewPlaceholder.style.display = "block";
 
@@ -987,10 +988,23 @@ function openInfoModal(objectName) {
       canvas.height = textureToUse.image.height;
       const ctx = canvas.getContext("2d");
       ctx.drawImage(textureToUse.image, 0, 0);
-      previewImg.src = canvas.toDataURL();
+      const dataUrl = canvas.toDataURL();
+
+      // Apply to preview image
+      previewImg.src = dataUrl;
       previewImg.style.display = "block";
       previewPlaceholder.style.display = "none";
-      console.log(`✅ GLB texture displayed for ${textureKey}`);
+
+      // Also apply to header as background with fade-out effect
+      headerElement.style.backgroundImage = `linear-gradient(to left, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 60%), url('${dataUrl}')`;
+      headerElement.style.backgroundSize = "cover";
+      headerElement.style.backgroundPosition = "center";
+      headerElement.style.backgroundColor = "transparent";
+      headerElement.style.backgroundBlendMode = "normal";
+
+      console.log(
+        `✅ GLB texture displayed for ${textureKey} (preview + header)`
+      );
     } catch (error) {
       console.warn(`⚠️ Error displaying GLB texture:`, error);
       // Fall back to assets if conversion fails
@@ -1011,7 +1025,15 @@ function openInfoModal(objectName) {
       previewImg.src = imagePath;
       previewImg.style.display = "block";
       previewPlaceholder.style.display = "none";
-      console.log(`✅ Asset image loaded: ${imagePath}`);
+
+      // Also apply to header as background with fade-out effect
+      headerElement.style.backgroundImage = `linear-gradient(to left, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 60%), url('${imagePath}')`;
+      headerElement.style.backgroundSize = "cover";
+      headerElement.style.backgroundPosition = "center";
+      headerElement.style.backgroundColor = "transparent";
+      headerElement.style.backgroundBlendMode = "normal";
+
+      console.log(`✅ Asset image loaded: ${imagePath} (preview + header)`);
     };
     previewImg2.onerror = function () {
       // Image not found, keep placeholder
