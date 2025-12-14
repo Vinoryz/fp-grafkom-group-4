@@ -40,103 +40,11 @@ const infoModalCloseBtn = document.getElementById("info-modal-close-btn");
 // Store GLB embedded metadata (loaded from scene.glb)
 let glbBatikMetadata = {}; // Will be populated when model loads
 
-// Track what batik is currently applied to Object_3_4
-let currentAppliedBatikOnCanting = null; // e.g., "batik_manggur", "batik_kawung", etc.
+// Store batik textures extracted from GLB materials
+let batikTextureMap = {}; // { batik_name: THREE.Texture }
 
-// Batik object data mapping
-const batikObjectData = {
-  batik_1: {
-    name: "Batik Mega Mendung",
-    description:
-      "Traditional cloud pattern from Cirebon, Indonesia. This iconic motif represents the beauty of flowing clouds and symbolizes patience, calmness, and the continuous movement of life.",
-    philosophy:
-      "The flowing clouds represent the endless cycle of nature and human life. They remind us that change is constant and beautiful, encouraging us to embrace transformation with grace and serenity.",
-  },
-  batik_2: {
-    name: "Batik Kawung",
-    description:
-      "Ancient motif featuring diamond-shaped patterns arranged in a geometric grid. Kawung is one of the oldest batik patterns, traditionally associated with royalty and nobility in Javanese culture.",
-    philosophy:
-      "The geometric precision of Kawung symbolizes order, protection, and divine geometry. It represents the harmony found in nature and the balance between chaos and structure in the universe.",
-  },
-  batik_3: {
-    name: "Batik Parang",
-    description:
-      "Diagonal slashing pattern that looks like ocean waves or sword slashes. Parang was historically a pattern reserved for Javanese royalty and nobility, signifying power and strength.",
-    philosophy:
-      "The dynamic diagonal lines represent forward movement, strength, and determination. Parang embodies the warrior spirit and the courage to move ahead despite challenges and obstacles.",
-  },
-  batik_4: {
-    name: "Batik Ceplokan",
-    description:
-      "Intricate flower-like or geometric patterns that repeat across the fabric. Ceplokan features small, precise motifs that create a stunning overall textile effect through repetition and balance.",
-    philosophy:
-      "The repetitive nature of Ceplokan symbolizes unity, consistency, and the interconnectedness of all things. Each small pattern contributes to the greater whole, reflecting how individual actions create collective beauty.",
-  },
-  batik_tujuh_rupa: {
-    name: "Batik Tujuh Rupa",
-    description:
-      "Batik Tujuh Rupa merupakan salah satu batik khas dari daerah dengan motif yang beragam dan unik. Tujuh Rupa berarti tujuh warna atau tujuh corak yang menggambarkan keragaman.",
-    philosophy:
-      "Melambangkan keragaman, kesatuan dalam perbedaan, dan keindahan yang lahir dari kolaborasi berbagai elemen.",
-  },
-  batik_parang: {
-    name: "Batik Parang",
-    description:
-      "Merupakan salah satu batik khas dari budaya Jawa. Kata 'Parang' berarti golok atau pedang, dan pola diagonal yang miring ke kiri atau kanan melambangkan gerakan tegas dan gagah.",
-    philosophy:
-      "Melambangkan kekuatan, ketegasan, dan semangat untuk bergerak maju menghadapi tantangan.",
-  },
-  batik_kawung: {
-    name: "Batik Kawung",
-    description:
-      "Batik Kawung merupakan motif batik yang berasal dari Yogyakarta. Pola ini menampilkan bentuk lonjong atau berlian kecil yang tersusun secara teratur dan seimbang.",
-    philosophy:
-      "Melambangkan keharmonisan, keseimbangan, dan kesempurnaan dalam setiap aspek kehidupan.",
-  },
-  batik_betawi: {
-    name: "Batik Betawi",
-    description:
-      "Batik Betawi merupakan Batik yang asalnya dari Betawi. Motif dari batik ini menunjukkan pengaruh budaya Arab, Cina, dan Eropa yang bergabung menjadi identitas unik kota Jakarta.",
-    philosophy:
-      "Melambangkan keragaman budaya, seni, dan perpaduan tradisi yang harmonis.",
-  },
-  batik_sekar_jagad: {
-    name: "Batik Sekar Jagad",
-    description:
-      "Batik Sekar Jagad berasal dari kaart (peta, dalam bahasa Belanda). Motif ini menampilkan pola geometris yang kompleks dengan elemen-elemen kecil yang terintegrasi.",
-    philosophy:
-      "Melambangkan keluasan dunia, pengetahuan, dan eksplorasi tanpa batas.",
-  },
-  batik_simbut: {
-    name: "Batik Simbut",
-    description:
-      "Batik Simbut merupakan warisan budaya Indonesia yang berasal dari tradisi batik tulis kuno. Simbut berarti pusaran atau aliran yang menggambarkan gerakan halus dan elegan.",
-    philosophy:
-      "Melambangkan keindahan dalam gerakan, kelancaran, dan aliran energi positif yang terus bergerak.",
-  },
-  batik_sidokmuti: {
-    name: "Batik Sidokmuti",
-    description:
-      "Motif batik Sidomukti lahir di lingkungan keraton Jawa, khususnya Yogyakarta. 'Sido' berarti menjadi dan 'Mukti' berarti sejahtera, sehingga Sidomukti berarti 'menjadi sejahtera'.",
-    philosophy:
-      "Melambangkan harapan untuk kehidupan yang sejahtera, bahagia, dan berkelanjutan.",
-  },
-  batik_sogan: {
-    name: "Batik Sogan",
-    description:
-      "Batik ini memiliki akar sejarah yang kuat dari daerah Yogyakarta. Warna sogan (cokelat kekuningan) berasal dari pewarna alami yang tradisional dan memberikan kesan klasik serta elegan.",
-    philosophy:
-      "Melambangkan kestabilan, tradisi, dan kearifan lokal yang terus dihargai.",
-  },
-  batik_lereng: {
-    name: "Batik Lereng",
-    description:
-      "Batik Lereng adalah salah satu jenis batik dengan pola diagonal atau miring. Pola ini menciptakan kesan gerakan dan dinamika visual yang menarik perhatian.",
-    philosophy:
-      "Melambangkan gerakan, progres, dan dinamika yang terus berkembang dalam kehidupan.",
-  },
-};
+// Track what batik is currently applied to Object_3_4
+let currentAppliedBatikOnCanting = null;
 
 // Collision detection variables
 let collidableObjects = []; // Array untuk menyimpan objek yang bisa ditabrak
@@ -642,6 +550,48 @@ function init() {
       }
       // ===== End: Extract metadata =====
 
+      // ===== Extract batik textures from materials (grandchild object_3_*) =====
+      model.traverse((child) => {
+        // Look for object_3_* meshes which contain the batik material
+        if (
+          child.isMesh &&
+          child.name &&
+          child.name.toLowerCase().startsWith("object_3")
+        ) {
+          // Find the root batik object by traversing up the hierarchy
+          let currentParent = child.parent;
+          let rootBatikName = null;
+
+          while (currentParent) {
+            const parentName = currentParent.name.toLowerCase();
+            if (parentName.includes("batik")) {
+              rootBatikName = currentParent.name;
+              break;
+            }
+            currentParent = currentParent.parent;
+          }
+
+          // Extract texture from the material
+          if (rootBatikName && child.material && child.material.map) {
+            const cleanedBatikName = cleanBatikName(rootBatikName);
+            batikTextureMap[cleanedBatikName] = child.material.map;
+            console.log(
+              `🎨 Extracted texture for ${cleanedBatikName} from ${child.name}`
+            );
+          }
+        }
+      });
+
+      if (Object.keys(batikTextureMap).length > 0) {
+        console.log(
+          "✅ All batik textures extracted:",
+          Object.keys(batikTextureMap)
+        );
+      } else {
+        console.log("⚠️ No batik textures found in GLB");
+      }
+      // ===== End: Extract textures =====
+
       // Hitung Bounding Box
       const box = new THREE.Box3().setFromObject(model);
       const size = box.getSize(new THREE.Vector3());
@@ -1017,28 +967,60 @@ function openInfoModal(objectName) {
   previewImg.style.display = "none";
   previewPlaceholder.style.display = "block";
 
-  // Try to load preview image from assets
-  const imagePath =
+  // Determine which batik name to look up for texture
+  const textureKey =
     objectName === "Object_3_4"
-      ? `./assets/${currentAppliedBatikOnCanting || "blank"}.jpg`
-      : `./assets/${cleanedGroupName}.jpg`;
+      ? currentAppliedBatikOnCanting
+      : cleanedGroupName;
 
-  console.log(`🖼️ Trying to load preview image: ${imagePath}`);
+  // Try to use extracted texture from GLB first
+  const textureToUse = textureKey ? batikTextureMap[textureKey] : null;
 
-  const previewImg2 = new Image();
-  previewImg2.onload = function () {
-    previewImg.src = imagePath;
-    previewImg.style.display = "block";
-    previewPlaceholder.style.display = "none";
-    console.log(`✅ Preview image loaded: ${imagePath}`);
-  };
-  previewImg2.onerror = function () {
-    // Image not found, keep placeholder
-    previewImg.style.display = "none";
-    previewPlaceholder.style.display = "block";
-    console.log(`⚠️ Preview image not found: ${imagePath}`);
-  };
-  previewImg2.src = imagePath;
+  if (textureToUse && textureToUse.isTexture) {
+    // It's a THREE.Texture from GLB
+    console.log(`🎨 Using GLB texture for ${textureKey}`);
+
+    try {
+      // Convert THREE.Texture to canvas/image for HTML display
+      const canvas = document.createElement("canvas");
+      canvas.width = textureToUse.image.width;
+      canvas.height = textureToUse.image.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(textureToUse.image, 0, 0);
+      previewImg.src = canvas.toDataURL();
+      previewImg.style.display = "block";
+      previewPlaceholder.style.display = "none";
+      console.log(`✅ GLB texture displayed for ${textureKey}`);
+    } catch (error) {
+      console.warn(`⚠️ Error displaying GLB texture:`, error);
+      // Fall back to assets if conversion fails
+      previewImg.style.display = "none";
+      previewPlaceholder.style.display = "block";
+    }
+  } else {
+    // Fallback to loading from assets folder
+    const imagePath =
+      objectName === "Object_3_4"
+        ? `./assets/${currentAppliedBatikOnCanting || "blank"}.jpg`
+        : `./assets/${cleanedGroupName}.jpg`;
+
+    console.log(`🖼️ Trying to load preview image from assets: ${imagePath}`);
+
+    const previewImg2 = new Image();
+    previewImg2.onload = function () {
+      previewImg.src = imagePath;
+      previewImg.style.display = "block";
+      previewPlaceholder.style.display = "none";
+      console.log(`✅ Asset image loaded: ${imagePath}`);
+    };
+    previewImg2.onerror = function () {
+      // Image not found, keep placeholder
+      previewImg.style.display = "none";
+      previewPlaceholder.style.display = "block";
+      console.log(`⚠️ Preview image not found: ${imagePath}`);
+    };
+    previewImg2.src = imagePath;
+  }
 
   console.log("✅ Info modal fully populated and displayed");
 }
